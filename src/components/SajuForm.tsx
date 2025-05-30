@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { SajuInput } from '@/types';
 
 interface SajuFormProps {
@@ -17,6 +17,11 @@ export default function SajuForm({ onSubmit, loading = false }: SajuFormProps) {
     birthDay: '',
     birthHour: '',
   });
+
+  // 각 입력 필드에 대한 ref
+  const monthRef = useRef<HTMLInputElement>(null);
+  const dayRef = useRef<HTMLInputElement>(null);
+  const hourRef = useRef<HTMLSelectElement>(null);
 
   // 시주 옵션 (자시부터 해시까지)
   const timeOptions = [
@@ -60,6 +65,37 @@ export default function SajuForm({ onSubmit, loading = false }: SajuFormProps) {
       ...prev,
       [name]: value,
     }));
+
+    // 자동 포커스 이동 로직
+    if (name === 'birthYear' && value.length === 4) {
+      monthRef.current?.focus();
+    } else if (name === 'birthMonth' && value.length === 2) {
+      dayRef.current?.focus();
+    } else if (name === 'birthDay' && value.length === 2) {
+      hourRef.current?.focus();
+    }
+  };
+
+  // 숫자만 입력 허용하는 핸들러
+  const handleNumberInput = (e: React.KeyboardEvent<HTMLInputElement>, maxLength: number) => {
+    const target = e.target as HTMLInputElement;
+    const value = target.value;
+    
+    // 백스페이스, 화살표 키 등은 허용
+    if (['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+      return;
+    }
+    
+    // 숫자가 아닌 경우 차단
+    if (!/[0-9]/.test(e.key)) {
+      e.preventDefault();
+      return;
+    }
+    
+    // 최대 길이 체크
+    if (value.length >= maxLength) {
+      e.preventDefault();
+    }
   };
 
   return (
@@ -109,13 +145,13 @@ export default function SajuForm({ onSubmit, loading = false }: SajuFormProps) {
           <div className="grid grid-cols-3 gap-3">
             <div>
               <input
-                type="number"
+                type="text"
                 name="birthYear"
                 value={formData.birthYear}
                 onChange={handleChange}
+                onKeyDown={(e) => handleNumberInput(e, 4)}
                 required
-                min="1900"
-                max="2024"
+                maxLength={4}
                 className="input-field text-center"
                 placeholder="연도"
               />
@@ -123,13 +159,14 @@ export default function SajuForm({ onSubmit, loading = false }: SajuFormProps) {
             </div>
             <div>
               <input
-                type="number"
+                ref={monthRef}
+                type="text"
                 name="birthMonth"
                 value={formData.birthMonth}
                 onChange={handleChange}
+                onKeyDown={(e) => handleNumberInput(e, 2)}
                 required
-                min="1"
-                max="12"
+                maxLength={2}
                 className="input-field text-center"
                 placeholder="월"
               />
@@ -137,13 +174,14 @@ export default function SajuForm({ onSubmit, loading = false }: SajuFormProps) {
             </div>
             <div>
               <input
-                type="number"
+                ref={dayRef}
+                type="text"
                 name="birthDay"
                 value={formData.birthDay}
                 onChange={handleChange}
+                onKeyDown={(e) => handleNumberInput(e, 2)}
                 required
-                min="1"
-                max="31"
+                maxLength={2}
                 className="input-field text-center"
                 placeholder="일"
               />
@@ -157,6 +195,7 @@ export default function SajuForm({ onSubmit, loading = false }: SajuFormProps) {
             출생시간 (시주) <span className="text-red-500">*</span>
           </label>
           <select
+            ref={hourRef}
             id="birthHour"
             name="birthHour"
             value={formData.birthHour}
@@ -191,6 +230,7 @@ export default function SajuForm({ onSubmit, loading = false }: SajuFormProps) {
           <li>• 정확한 출생정보를 입력해주시면 더 정확한 사주팔자를 확인할 수 있습니다.</li>
           <li>• 음력 날짜의 경우 양력으로 변환하여 입력해주세요.</li>
           <li>• 시주는 전통 명리학의 12시진 기준입니다.</li>
+          <li>• 연도 4자리, 월/일 2자리 입력 시 자동으로 다음 필드로 이동합니다.</li>
           <li>• 입력하신 정보는 사주 계산에만 사용됩니다.</li>
         </ul>
       </div>
