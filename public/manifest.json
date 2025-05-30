@@ -1,0 +1,32 @@
+{
+  "name": "점보고 - 사주팔자",
+  "short_name": "점보고",
+  "description": "정확한 사주팔자 분석과 ChatGPT 기반 상세 해석",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3B82F6",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["lifestyle", "entertainment"],
+  "lang": "ko",
+  "scope": "/",
+  "id": "jumbogo-saju"
+} 
