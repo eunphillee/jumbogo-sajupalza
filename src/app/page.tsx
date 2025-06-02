@@ -1,53 +1,34 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import Image from 'next/image';
-import SajuForm from '@/components/SajuForm';
-import SajuResult from '@/components/SajuResult';
 import { SajuInput, SajuResult as SajuResultType, ChatGPTResponse, ApiResponse } from '@/types';
 
+// 클라이언트 사이드 전용 컴포넌트들을 동적 로딩
+const SajuForm = dynamic(() => import('@/components/SajuForm'), {
+  loading: () => <div className="text-center py-8">로딩 중...</div>
+});
+
+const SajuResult = dynamic(() => import('@/components/SajuResult'), {
+  loading: () => <div className="text-center py-8">결과 로딩 중...</div>
+});
+
 export default function HomePage() {
+  const [mounted, setMounted] = useState(false);
   const [sajuResult, setSajuResult] = useState<SajuResultType | null>(null);
-  const [chatGPTAnalysis, setChatGPTAnalysis] = useState<ChatGPTResponse | undefined>(undefined);
+  const [chatGPTAnalysis, setChatGPTAnalysis] = useState<ChatGPTResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [chatGPTLoading, setChatGPTLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSajuSubmit = async (formData: SajuInput) => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const response = await fetch('/api/saju', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+  // 클라이언트에서만 렌더링되도록 보장
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-      const result: ApiResponse<SajuResultType> = await response.json();
-
-      if (result.success && result.data) {
-        setSajuResult(result.data);
-        setChatGPTAnalysis(undefined); // 새로운 사주 결과이므로 ChatGPT 분석 초기화
-      } else {
-        setError(result.error || '사주 계산 중 오류가 발생했습니다.');
-      }
-    } catch (err) {
-      console.error('Saju calculation error:', err);
-      setError('서버 연결 오류가 발생했습니다.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGetChatGPTAnalysis = async () => {
-    if (!sajuResult) return;
-
+  const handleChatGPTAnalysis = async (sajuResult: SajuResultType): Promise<ChatGPTResponse> => {
     setChatGPTLoading(true);
-    setError(null);
-
     try {
       const response = await fetch('/api/chatgpt', {
         method: 'POST',
@@ -57,26 +38,75 @@ export default function HomePage() {
         body: JSON.stringify({ sajuResult }),
       });
 
-      const result: ApiResponse<ChatGPTResponse> = await response.json();
-
-      if (result.success && result.data) {
+      const result = await response.json();
+      
+      if (result.success) {
         setChatGPTAnalysis(result.data);
+        return result.data;
       } else {
-        setError(result.error || 'ChatGPT 분석 중 오류가 발생했습니다.');
+        throw new Error(result.error || 'ChatGPT 분석 중 오류가 발생했습니다.');
       }
-    } catch (err) {
-      console.error('ChatGPT analysis error:', err);
-      setError('ChatGPT 서버 연결 오류가 발생했습니다.');
+    } catch (error) {
+      console.error('ChatGPT analysis error:', error);
+      throw error;
     } finally {
       setChatGPTLoading(false);
     }
   };
 
+  const handleSajuSubmit = async (formData: SajuInput) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // 서버 API로 사주 계산 요청 (ChatGPT 분석 제외)
+      const response = await fetch('/api/saju', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        throw new Error('서버 연결 오류가 발생했습니다.');
+      }
+
+      const result = await response.json();
+
+      if (!result.success || !result.data) {
+        throw new Error(result.error || '사주 계산 중 오류가 발생했습니다.');
+      }
+
+      // 사주 결과만 설정 (ChatGPT 분석은 별도로)
+      setSajuResult(result.data.sajuResult);
+      setChatGPTAnalysis(null); // 분석 결과 초기화
+      
+    } catch (err) {
+      console.error('Saju calculation error:', err);
+      setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleReset = () => {
     setSajuResult(null);
-    setChatGPTAnalysis(undefined);
+    setChatGPTAnalysis(null);
     setError(null);
   };
+
+  // 클라이언트 마운트 전에는 로딩 표시
+  if (!mounted) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">페이지 로딩 중...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -86,7 +116,7 @@ export default function HomePage() {
           점보고 사주팔자
         </h1>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          정확한 명리학 기반 사주팔자 분석과 AI ChatGPT의 전문적인 해석을 제공합니다.
+          정확한 명리학 기반 사주팔자 분석을 제공합니다.
           생년월일시와 성별, 이름을 입력하시면 상세한 사주팔자를 확인하실 수 있습니다.
         </p>
       </div>
@@ -110,7 +140,7 @@ export default function HomePage() {
                     <span className="text-yellow-300">운세 여행</span>
                   </h2>
                   <p className="text-xl md:text-2xl opacity-90 mb-8 max-w-3xl mx-auto">
-                    수천 년 전통의 사주팔자와 최신 AI 기술이 만나<br />
+                    수천 년 전통의 사주팔자로<br />
                     당신만의 특별한 운명을 알아보세요
                   </p>
                 </div>
@@ -122,8 +152,8 @@ export default function HomePage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                       </svg>
                     </div>
-                    <h3 className="text-lg font-bold mb-2">AI 맞춤 분석</h3>
-                    <p className="text-sm opacity-80">ChatGPT 기반 전문 해석</p>
+                    <h3 className="text-lg font-bold mb-2">즉시 분석</h3>
+                    <p className="text-sm opacity-80">실시간 사주 계산</p>
                   </div>
                   
                   <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6">
@@ -181,7 +211,7 @@ export default function HomePage() {
           <SajuResult
             result={sajuResult}
             chatGPTAnalysis={chatGPTAnalysis}
-            onGetChatGPTAnalysis={handleGetChatGPTAnalysis}
+            onGetChatGPTAnalysis={handleChatGPTAnalysis}
             loading={chatGPTLoading}
           />
           

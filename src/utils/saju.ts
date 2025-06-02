@@ -55,7 +55,7 @@ export function calculateBasicSaju(input: SajuInput): Partial<SajuResult> {
     month_pillar: monthPillar,
     day_pillar: dayPillar,
     hour_pillar: hourPillar,
-    compatibility: `${zodiac}띠 - 기본 궁합 정보`,
+    financial_fortune: `${zodiac}띠 - 재물운이 안정적입니다`,
     fortune: generateBasicFortune(yearPillar, input.gender),
     personality: generateBasicPersonality(dayStem),
     career: generateBasicCareer(monthStem),

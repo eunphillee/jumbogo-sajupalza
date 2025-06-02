@@ -4,8 +4,8 @@ import { SajuResult as SajuResultType, ChatGPTResponse } from '@/types';
 
 interface SajuResultProps {
   result: SajuResultType;
-  chatGPTAnalysis?: ChatGPTResponse;
-  onGetChatGPTAnalysis: () => void;
+  chatGPTAnalysis?: ChatGPTResponse | null;
+  onGetChatGPTAnalysis: (sajuResult: SajuResultType) => Promise<ChatGPTResponse>;
   loading?: boolean;
 }
 
@@ -118,8 +118,8 @@ export default function SajuResult({
             </div>
             
             <div className="p-4 bg-purple-50 rounded-lg">
-              <h4 className="font-semibold text-purple-800 mb-2">궁합</h4>
-              <p className="text-purple-700 text-sm">{result.compatibility}</p>
+              <h4 className="font-semibold text-purple-800 mb-2">금전운</h4>
+              <p className="text-purple-700 text-sm">{result.financial_fortune}</p>
             </div>
           </div>
         </div>
@@ -129,15 +129,6 @@ export default function SajuResult({
       <div className="card">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-xl font-semibold text-gray-800">AI 상세 분석</h3>
-          {!chatGPTAnalysis && (
-            <button
-              onClick={onGetChatGPTAnalysis}
-              disabled={loading}
-              className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? '분석 중...' : 'AI 분석 받기'}
-            </button>
-          )}
         </div>
 
         {chatGPTAnalysis ? (
@@ -168,10 +159,30 @@ export default function SajuResult({
               </ul>
             </div>
           </div>
+        ) : loading ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">AI 분석을 진행 중입니다...</p>
+            <p className="text-sm text-gray-500 mt-2">잠시만 기다려주세요.</p>
+          </div>
         ) : (
-          <div className="text-center py-8 text-gray-500">
-            <p className="mb-4">ChatGPT를 통해 더 상세한 사주 분석을 받아보세요.</p>
-            <p className="text-sm">AI가 제공하는 전문적인 해석과 조언을 확인할 수 있습니다.</p>
+          <div className="text-center py-8">
+            <div className="mb-6">
+              <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+              </div>
+              <h4 className="text-lg font-semibold text-gray-800 mb-2">AI 전문가 분석</h4>
+              <p className="text-gray-600 mb-6">ChatGPT가 사주팔자를 상세히 분석해드립니다.</p>
+              <button
+                onClick={() => onGetChatGPTAnalysis(result)}
+                className="btn-primary py-3 px-8 text-lg font-semibold"
+                disabled={loading}
+              >
+                AI 분석 받기
+              </button>
+            </div>
           </div>
         )}
       </div>

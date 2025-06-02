@@ -20,7 +20,7 @@ export interface SajuResult {
   day_pillar: string; // 일주
   hour_pillar: string; // 시주
   // 추가 분석 정보
-  compatibility: string; // 궁합
+  financial_fortune: string; // 금전운
   fortune: string; // 운세
   personality: string; // 성격
   career: string; // 직업운
